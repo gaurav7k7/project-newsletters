@@ -1,0 +1,63 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+export default async function AdminNewsletters() {
+  const newsletters = await prisma.newsletter.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      createdAt: true,
+    },
+  });
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8 flex-grow">
+        <h1 className="text-2xl font-bold mb-6">Admin: Manage Newsletters</h1>
+        
+        <div className="mb-6">
+          <Link 
+            href="/admin/newsletters/create" 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-block transition-colors"
+          >
+            Add Newsletter
+          </Link>
+        </div>
+
+        {newsletters.length === 0 ? (
+          <p className="text-gray-500">No newsletters found.</p>
+        ) : (
+          <ul className="space-y-3">
+            {newsletters.map((newsletter) => (
+              <li 
+                key={newsletter.id} 
+                className="border rounded-lg p-4 flex justify-between items-center bg-white shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div>
+                  <h3 className="font-medium">{newsletter.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    Created: {new Date(newsletter.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="space-x-3">
+                  <Link 
+                    href={`/admin/newsletters/${newsletter.slug}/edit`}
+                    className="text-blue-600 hover:text-blue-800 underline transition-colors"
+                  >
+                    Edit
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
