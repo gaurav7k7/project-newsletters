@@ -11,7 +11,10 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  newsletters Newsletter[] // relation
+  role      String   @default("USER")
+  isPremium Boolean  @default(false)
+  stripeCustomerId String?
+  newsletters Newsletter[] 
   createdAt DateTime @default(now())
 }
 
@@ -21,7 +24,7 @@ model Newsletter {
   slug        String   @unique
   description String?
   content     String?
-  imageUrl    String?  // New field for storing image URLs
+  imageUrl    String?
   author      User?    @relation(fields: [authorId], references: [id])
   authorId    String?
   createdAt   DateTime @default(now())
@@ -33,6 +36,6 @@ model Newsletter {
 model Topic {
   id          String   @id @default(cuid())
   name        String   @unique
-  slug     String   @unique
+  slug        String   @unique
   newsletters Newsletter[]
 }
