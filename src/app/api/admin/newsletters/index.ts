@@ -1,28 +1,36 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import slugify from "slugify";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method === "POST") {
-    const { title, slug, content, topicId } = req.body;
+export async function GET() {
+  const newsletters = await prisma.newsletter.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { topic: true },
+  });
+  return NextResponse.json(newsletters);
+}
 
-    try {
-      await prisma.newsletter.create({
-        data: {
-          title,
-          slug,
-          content,
-          topic: topicId ? { connect: { id: topicId } } : undefined,
-        },
-      });
-      res.status(201).json({ message: "created" });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "could not create newsletter" });
-    }
-  } else {
-    res.status(405).end();
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const { title, content, topicId } = await req.json();
+  const slug = slugify(title, { lower: true });
+
+  try {
+    const newsletter = await prisma.newsletter.create({
+      data: {
+        title,
+        slug,
+        content,
+        topic: { connect: { id: topicId } },
+      },
+    });
+    return NextResponse.json(newsletter, { status: 201 });
+  } catch {
+    return NextResponse.json({ message: "Creation failed" }, { status: 400 });
   }
 }

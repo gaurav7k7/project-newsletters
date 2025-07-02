@@ -10,7 +10,12 @@ export default function SearchBar() {
   };
 
   return (
-    <form onSubmit={handleSearch} className="flex gap-2 my-4">
+    <form
+      onSubmit={handleSearch}
+      action="/search"
+      method="get"
+      className="flex gap-2 my-4"
+    >
       <input
         type="text"
         placeholder="Search newsletters..."

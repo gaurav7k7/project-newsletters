@@ -21,6 +21,7 @@ model Newsletter {
   slug        String   @unique
   description String?
   content     String?
+  imageUrl    String?  // New field for storing image URLs
   author      User?    @relation(fields: [authorId], references: [id])
   authorId    String?
   createdAt   DateTime @default(now())
@@ -32,5 +33,6 @@ model Newsletter {
 model Topic {
   id          String   @id @default(cuid())
   name        String   @unique
+  slug     String   @unique
   newsletters Newsletter[]
 }

@@ -1,33 +1,59 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+export async function GET(
+  req: Request,
+  { params }: { params: { slug: string } }
 ) {
-  const { slug } = req.query;
+  const newsletter = await prisma.newsletter.findUnique({
+    where: { slug: params.slug },
+    include: { topic: true },
+  });
 
-  if (req.method === "PUT") {
-    const { title, content } = req.body;
-    try {
-      await prisma.newsletter.update({
-        where: { slug: slug as string },
-        data: { title, content },
-      });
-      res.status(200).json({ message: "updated" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update" });
-    }
-  } else if (req.method === "DELETE") {
-    try {
-      await prisma.newsletter.delete({
-        where: { slug: slug as string },
-      });
-      res.status(200).json({ message: "deleted" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete" });
-    }
-  } else {
-    res.status(405).end();
+  return newsletter
+    ? NextResponse.json(newsletter)
+    : NextResponse.json({ message: "Not found" }, { status: 404 });
+}
+
+export async function PUT(
+  req: Request,
+  { params }: { params: { slug: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const { title, content, topicId } = await req.json();
+
+  try {
+    const updated = await prisma.newsletter.update({
+      where: { slug: params.slug },
+      data: {
+        title,
+        content,
+        topic: { connect: { id: topicId } },
+      },
+    });
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ message: "Update failed" }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { slug: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  try {
+    await prisma.newsletter.delete({ where: { slug: params.slug } });
+    return NextResponse.json({ message: "Deleted" });
+  } catch {
+    return NextResponse.json({ message: "Delete failed" }, { status: 400 });
   }
 }
